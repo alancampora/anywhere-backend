@@ -18,6 +18,8 @@
   "homepage": "https://github.com/alancampora/anywhere-backend#readme",
   "description": "",
   "dependencies": {
+    "body-parser": "^1.17.2",
+    "express": "^4.15.4",
     "request": "^2.81.0",
     "request-promises": "^1.1.0"
   },
