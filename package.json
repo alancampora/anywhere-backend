@@ -1,0 +1,27 @@
+{
+  "name": "anywhere-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alancampora/anywhere-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alancampora/anywhere-backend/issues"
+  },
+  "homepage": "https://github.com/alancampora/anywhere-backend#readme",
+  "description": "",
+  "dependencies": {
+    "request": "^2.81.0",
+    "request-promises": "^1.1.0"
+  },
+  "devDependencies": {
+    "request-promise": "^4.2.1"
+  }
+}
