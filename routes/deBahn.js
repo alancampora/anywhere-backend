@@ -1,66 +1,67 @@
-const deBahn = {},
-    rp = require('request-promise');
+const rp = require('request-promise');
 
-deBahn.get = (req, res) => {
-    const query = req.query,
-        host = "https://api.deutschebahn.com/fahrplan-plus/v1/",
-        headers = {
-            "Authorization": "Bearer a64a52822034636f70c02d11eefd7038"
+module.exports = ( function(){
+    
+    const host = "https://api.deutschebahn.com/fahrplan-plus/v1/",
+          headers = { "Authorization": "Bearer a64a52822034636f70c02d11eefd7038" };
+
+    // --------- Public
+    const get = (req, res) => {
+            const query = req.query;
+            getLocation("location", { main: query.name })
+                .then(locationData => getDepartureBoard("departureBoard", JSON.parse(locationData)))
+                .then(departures => getJourneisDetails("journeyDetails", JSON.parse(departures)))
+                .then(journeys => res.json(response(journeys)))
+                .catch(err => res.json({ error: err }));
+    };
+
+    // --------- Private
+    
+    // response:: [ResolvedPromises] -> JSON
+    const response = (journeys) => journeys.map(journey => JSON.parse(journey));
+
+    //getJourneisDetails: String -> String -> String -> Object -> [ResolvedPromises]
+    const getJourneisDetails =  (journeyService, departures) =>  Promise.all(
+        departures.map(departure => makeRequest(journeyService, {main: encodeURI(departure.detailsId)}))
+    );
+
+    //getLocation: String -> String -> String -> Object -> Promise
+    const getLocation = (locationService, parameters) =>  makeRequest(locationService, parameters);
+
+    //getDepartureBoard: String -> String -> String ->  Object -> Promise
+    const getDepartureBoard = (departureBoardService, locationData) => makeRequest(departureBoardService, {
+            main: locationData[0].id,
+            date: "2017-08-20"
+    });
+
+    //makeRequest: String -> String -> String -> Object-> Promise 
+    const makeRequest = function(service, parameters) {
+        const
+            url = createUrl(host, service, parameters),
+            endPoint = {
+                uri: url,
+                headers: headers
+            };
+        return rp(endPoint);
+    };
+
+    // createUrl:: String -> String -> Obj -> String
+    const createUrl = function(host, service, options) {
+        let results,
+            parameters = "";
+
+        for (let key in options) {
+            parameters += key === "main" ?
+                options[key] :
+                "?" + key + "=" + options[key];
         }
 
-    getLocation(host, headers, "location" , { main: query.name })
-        .then(locationData => getDepartureBoard(host, headers, "departureBoard", JSON.parse(locationData)))
-        .then(departures => getJourneisDetails(host,headers,"journeyDetails",JSON.parse(departures)))  
-        .then(data => {
-            let journeys = data.map(journey => JSON.parse(journey))
-            console.log(journeys);
-            res.json(journeys);
-        })
-        .catch( err => res.json({error: err }));
-};
+        return host + service + "/" + parameters;
 
-//getJourneisDetails: String -> String -> String -> Object -> [ResolvedPromises]
-function getJourneisDetails(host,headers,journeyService, departures){
-    var promises = departures.map(departure => makeRequest(host, headers, journeyService, { main: encodeURI(departure.detailsId) }))
-    return Promise.all(promises);
-}
+    };
 
-//getLocation: String -> String -> String -> Object -> Promise
-function getLocation(host,headers,locationService,parameters){
-    return makeRequest(host, headers, locationService, parameters);
-};
-
-//getDepartureBoard: String -> String -> String ->  Object -> Promise
-function getDepartureBoard(host, headers, departureBoardService, locationData){
-    return makeRequest(host,headers,departureBoardService, {main: locationData[0].id, date: "2017-08-20"})
-};
-
-//makeRequest: String -> String -> String -> Object-> Promise 
-function makeRequest(host, headers, service, parameters) {
-    const 
-        url = createUrl(host, service, parameters),
-        endPoint = {
-            uri: url,
-            headers: headers
-        };
-    console.log(endPoint);
-    return rp(endPoint);
-}
-
-
-// createUrl:: String -> String -> Obj -> String
-function createUrl(host, service, options) {
-    let results, 
-        parameters="";
-
-    for (let key in options) {
-        parameters += key==="main" ? 
-                options[key] : 
-                "?" +key + "=" + options[key];
+    return {
+        get: get    
     }
+})();
 
-    return host + service + "/" + parameters;
-
-}
-
-module.exports = deBahn;
