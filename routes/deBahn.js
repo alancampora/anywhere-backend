@@ -8,22 +8,34 @@ deBahn.get = (req, res) => {
             "Authorization": "Bearer a64a52822034636f70c02d11eefd7038"
         }
 
-    makeRequest(host, headers, "location" , { main: query.name })
-        .then(data => makeRequest(host,headers,"departureBoard", {main: JSON.parse(data)[0].id, date: "2017-08-20"}))
-        .then(data => { 
-            let departures = JSON.parse(data); 
-            departures = departures.map(departure =>makeRequest(host, headers, "journeyDetails", { main: encodeURI(departure.detailsId)}));
-            return Promise.all(departures);
-        })
+    getLocation(host, headers, "location" , { main: query.name })
+        .then(locationData => getDepartureBoard(host, headers, "departureBoard", JSON.parse(locationData)))
+        .then(departures => getJourneisDetails(host,headers,"journeyDetails",JSON.parse(departures)))  
         .then(data => {
             let journeys = data.map(journey => JSON.parse(journey))
+            console.log(journeys);
             res.json(journeys);
         })
         .catch( err => res.json({error: err }));
 };
 
+//getJourneisDetails: String -> String -> String -> Object -> [ResolvedPromises]
+function getJourneisDetails(host,headers,journeyService, departures){
+    var promises = departures.map(departure => makeRequest(host, headers, journeyService, { main: encodeURI(departure.detailsId) }))
+    return Promise.all(promises);
+}
 
-//getLocation: String -> String -> String -> Object-> Promise 
+//getLocation: String -> String -> String -> Object -> Promise
+function getLocation(host,headers,locationService,parameters){
+    return makeRequest(host, headers, locationService, parameters);
+};
+
+//getDepartureBoard: String -> String -> String ->  Object -> Promise
+function getDepartureBoard(host, headers, departureBoardService, locationData){
+    return makeRequest(host,headers,departureBoardService, {main: locationData[0].id, date: "2017-08-20"})
+};
+
+//makeRequest: String -> String -> String -> Object-> Promise 
 function makeRequest(host, headers, service, parameters) {
     const 
         url = createUrl(host, service, parameters),
